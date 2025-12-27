@@ -8,9 +8,10 @@ import {
   getPreferenceValues,
   confirmAlert,
   Keyboard,
+  Detail,
 } from "@raycast/api";
 import { useState, useEffect } from "react";
-import { getClient, Session } from "./lib/opencode";
+import { getClient, Session, Message } from "./lib/opencode";
 import { handoffToOpenCode, copySessionCommand } from "./lib/handoff";
 import { homedir } from "os";
 
@@ -22,6 +23,9 @@ export default function Command() {
   const preferences = getPreferenceValues<Preferences>();
   const [sessions, setSessions] = useState<Session[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [selectedSession, setSelectedSession] = useState<Session | null>(null);
+  const [sessionMessages, setSessionMessages] = useState<Message[]>([]);
+  const [loadingMessages, setLoadingMessages] = useState(false);
 
   async function loadSessions() {
     setIsLoading(true);
@@ -85,6 +89,24 @@ export default function Command() {
     await copySessionCommand(session.id, session.directory);
   }
 
+  async function handleSelectSession(session: Session) {
+    setLoadingMessages(true);
+    setSelectedSession(session);
+    try {
+      const client = await getClient();
+      const messages = await client.getSessionMessages(session.id);
+      setSessionMessages(messages);
+    } catch (error) {
+      await showToast({
+        style: Toast.Style.Failure,
+        title: "Failed to load messages",
+        message: error instanceof Error ? error.message : "Unknown error",
+      });
+    } finally {
+      setLoadingMessages(false);
+    }
+  }
+
   function formatDate(timestamp: number): string {
     const date = new Date(timestamp);
     const now = new Date();
@@ -98,6 +120,87 @@ export default function Command() {
     if (diffHours < 24) return `${diffHours}h ago`;
     if (diffDays < 7) return `${diffDays}d ago`;
     return date.toLocaleDateString();
+  }
+
+  function getLastQA(): { question: string; answer: string } | null {
+    const userMessages = sessionMessages.filter((m) => m.info.role === "user");
+    const assistantMessages = sessionMessages.filter(
+      (m) => m.info.role === "assistant",
+    );
+
+    if (userMessages.length === 0 || assistantMessages.length === 0) {
+      return null;
+    }
+
+    const lastUserMessage = userMessages[userMessages.length - 1];
+    const lastAssistantMessage =
+      assistantMessages[assistantMessages.length - 1];
+
+    const question = lastUserMessage.parts
+      .filter((p) => p.type === "text")
+      .map((p) => p.text)
+      .join("\n");
+
+    const answer = lastAssistantMessage.parts
+      .filter((p) => p.type === "text")
+      .map((p) => p.text)
+      .join("\n");
+
+    return { question, answer };
+  }
+
+  if (selectedSession) {
+    const lastQA = getLastQA();
+
+    return (
+      <Detail
+        isLoading={loadingMessages}
+        markdown={
+          lastQA
+            ? `# ${lastQA.question}\n\n${lastQA.answer}`
+            : "# " + selectedSession.title
+        }
+        navigationTitle={selectedSession.title || "Session"}
+        metadata={
+          <Detail.Metadata>
+            <Detail.Metadata.Label
+              title="Directory"
+              text={selectedSession.directory?.replace(homedir(), "~") || "N/A"}
+            />
+            <Detail.Metadata.Label
+              title="Updated"
+              text={formatDate(selectedSession.time.updated)}
+            />
+          </Detail.Metadata>
+        }
+        actions={
+          <ActionPanel>
+            <ActionPanel.Section title="Open">
+              <Action
+                title="Continue in Opencode"
+                icon={Icon.Terminal}
+                shortcut={Keyboard.Shortcut.Common.Open}
+                onAction={() => handleHandoff(selectedSession)}
+              />
+              <Action
+                title="Copy Session Command"
+                icon={Icon.Clipboard}
+                shortcut={Keyboard.Shortcut.Common.Copy}
+                onAction={() => handleCopyCommand(selectedSession)}
+              />
+            </ActionPanel.Section>
+            <ActionPanel.Section title="Navigation">
+              <Action
+                title="Back to Sessions"
+                icon={Icon.ArrowLeft}
+                shortcut={{ modifiers: ["cmd"], key: "[" }}
+                onAction={() => setSelectedSession(null)}
+              />
+            </ActionPanel.Section>
+          </ActionPanel>
+        }
+      />
+    );
   }
 
   return (
@@ -128,16 +231,10 @@ export default function Command() {
               <ActionPanel>
                 <ActionPanel.Section title="Open">
                   <Action
-                    title="Continue in Opencode"
-                    icon={Icon.Terminal}
+                    title="View Session"
+                    icon={Icon.Eye}
                     shortcut={Keyboard.Shortcut.Common.Open}
-                    onAction={() => handleHandoff(session)}
-                  />
-                  <Action
-                    title="Copy Session Command"
-                    icon={Icon.Clipboard}
-                    shortcut={Keyboard.Shortcut.Common.Copy}
-                    onAction={() => handleCopyCommand(session)}
+                    onAction={() => handleSelectSession(session)}
                   />
                 </ActionPanel.Section>
                 <ActionPanel.Section title="Manage">

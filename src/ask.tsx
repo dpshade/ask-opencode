@@ -13,15 +13,16 @@ import {
   popToRoot,
   Clipboard,
 } from "@raycast/api";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import React from "react";
 import { useOpenCode } from "./hooks/useOpenCode";
 import { useProviders } from "./hooks/useProviders";
-import { useProjects } from "./hooks/useProjects";
 import {
   usePathAutocomplete,
   extractPathFromQuery,
 } from "./hooks/usePathAutocomplete";
 import { handoffToOpenCode, copySessionCommand } from "./lib/handoff";
+import { getClient, Session } from "./lib/opencode";
 import { homedir } from "os";
 
 interface Preferences {
@@ -71,9 +72,39 @@ export default function Command(props: LaunchProps<{ arguments: Arguments }>) {
     { name: "clear", description: "Start fresh conversation" },
     { name: "share", description: "Share this session" },
   ];
-  const { projects, addProject } = useProjects();
+  const [sessions, setSessions] = useState<Session[]>([]);
   const { suggestions: pathSuggestions, isActive: showingPathSuggestions } =
     usePathAutocomplete(searchText);
+
+  useEffect(() => {
+    async function loadSessions() {
+      try {
+        const client = await getClient();
+        const sessionList = await client.listSessions();
+        setSessions(
+          sessionList.sort((a, b) => b.time.updated - a.time.updated),
+        );
+      } catch {}
+    }
+    loadSessions();
+  }, []);
+
+  const recentProjects = React.useMemo(() => {
+    const uniqueDirs = new Map<string, { path: string; lastUsed: number }>();
+    sessions.forEach((session) => {
+      if (session.directory) {
+        if (!uniqueDirs.has(session.directory)) {
+          uniqueDirs.set(session.directory, {
+            path: session.directory,
+            lastUsed: session.time.updated,
+          });
+        }
+      }
+    });
+    return Array.from(uniqueDirs.values())
+      .sort((a, b) => b.lastUsed - a.lastUsed)
+      .slice(0, 5);
+  }, [sessions]);
 
   const showingAgentPicker =
     searchText.startsWith("@") &&
@@ -113,7 +144,6 @@ export default function Command(props: LaunchProps<{ arguments: Arguments }>) {
     if (directory && directory !== activeDirectory) {
       setActiveDirectory(directory);
       setWorkingDirectory(directory);
-      await addProject(directory);
     }
 
     if (!activeModel) {
@@ -190,7 +220,6 @@ export default function Command(props: LaunchProps<{ arguments: Arguments }>) {
     setSearchText(`${currentQuery}@${path} `);
     setActiveDirectory(expandedPath);
     setWorkingDirectory(expandedPath);
-    addProject(expandedPath);
   }
 
   async function handleHandoff() {
@@ -438,40 +467,50 @@ export default function Command(props: LaunchProps<{ arguments: Arguments }>) {
             </List.Section>
           )}
 
-          {projects.length > 0 && (
+          {recentProjects.length > 0 && (
             <List.Section
-              title="Recent Projects"
-              subtitle="Use @path to switch"
+              title={
+                activeDirectory
+                  ? `Recent Projects - ${activeDirectory.split("/").pop()}`
+                  : "Recent Projects"
+              }
+              subtitle={
+                activeDirectory ? "Active project" : "Use @path to switch"
+              }
             >
-              {projects.slice(0, 5).map((project) => (
-                <List.Item
-                  key={project.path}
-                  title={project.name}
-                  subtitle={project.path.replace(homedir(), "~")}
-                  icon={Icon.Folder}
-                  accessories={[
-                    {
-                      text: new Date(project.lastUsed).toLocaleDateString(),
-                      tooltip: "Last used",
-                    },
-                  ]}
-                  actions={
-                    <ActionPanel>
-                      <Action
-                        title="Use This Project"
-                        onAction={() => {
-                          setActiveDirectory(project.path);
-                          setWorkingDirectory(project.path);
-                          showToast({
-                            style: Toast.Style.Success,
-                            title: `Switched to ${project.name}`,
-                          });
-                        }}
-                      />
-                    </ActionPanel>
-                  }
-                />
-              ))}
+              {recentProjects.map((project) => {
+                const projectName =
+                  project.path.split("/").pop() || project.path;
+                return (
+                  <List.Item
+                    key={project.path}
+                    title={projectName}
+                    subtitle={project.path.replace(homedir(), "~")}
+                    icon={Icon.Folder}
+                    accessories={[
+                      {
+                        text: new Date(project.lastUsed).toLocaleDateString(),
+                        tooltip: "Last used",
+                      },
+                    ]}
+                    actions={
+                      <ActionPanel>
+                        <Action
+                          title="Use This Project"
+                          onAction={() => {
+                            setActiveDirectory(project.path);
+                            setWorkingDirectory(project.path);
+                            showToast({
+                              style: Toast.Style.Success,
+                              title: `Switched to ${projectName}`,
+                            });
+                          }}
+                        />
+                      </ActionPanel>
+                    }
+                  />
+                );
+              })}
             </List.Section>
           )}
         </>
