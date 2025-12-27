@@ -28,22 +28,18 @@ export function useProviders() {
         setProviders(data.all);
 
         const favs: FavoriteModel[] = [];
-        const defaultInfo = data.default;
+        const defaultMap = data.default || {};
+        const connectedSet = new Set(data.connected || []);
 
-        if (
-          defaultInfo &&
-          "providerID" in defaultInfo &&
-          "modelID" in defaultInfo
-        ) {
-          const provider = data.all.find(
-            (p) => p.id === defaultInfo.providerID,
-          );
-          if (provider && provider.models[defaultInfo.modelID]) {
+        for (const [providerID, modelID] of Object.entries(defaultMap)) {
+          if (!connectedSet.has(providerID)) continue;
+          const provider = data.all.find((p) => p.id === providerID);
+          if (provider && provider.models[modelID]) {
             favs.push({
-              providerID: defaultInfo.providerID,
+              providerID,
               providerName: provider.name,
-              modelID: defaultInfo.modelID,
-              modelName: provider.models[defaultInfo.modelID].name,
+              modelID,
+              modelName: provider.models[modelID].name,
             });
           }
         }

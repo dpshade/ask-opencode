@@ -69,10 +69,8 @@ export interface Provider {
 
 export interface ProviderResponse {
   all: Provider[];
-  default: {
-    providerID: string;
-    modelID: string;
-  };
+  connected: string[];
+  default: Record<string, string>;
 }
 
 class OpenCodeClient {
