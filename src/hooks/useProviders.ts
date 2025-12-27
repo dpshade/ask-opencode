@@ -1,28 +1,13 @@
 import { useState, useEffect } from "react";
-import { getServerUrl } from "../lib/opencode";
+import { getClient, Provider, ProviderResponse } from "../lib/opencode";
 
-export interface Model {
-  id: string;
-  providerID: string;
-  name: string;
-}
-
-export interface Provider {
-  id: string;
-  name: string;
-  models: Record<string, Model>;
-}
+export type { Provider } from "../lib/opencode";
 
 export interface FavoriteModel {
   providerID: string;
   providerName: string;
   modelID: string;
   modelName: string;
-}
-
-export interface ProviderResponse {
-  all: Provider[];
-  default: Record<string, string>;
 }
 
 export function useProviders() {
@@ -37,29 +22,32 @@ export function useProviders() {
 
   useEffect(() => {
     async function fetchProviders() {
-      const baseUrl = getServerUrl() || "http://localhost:4096";
       try {
-        const response = await fetch(`${baseUrl}/provider`);
-        if (!response.ok) {
-          throw new Error(`Failed to fetch providers: ${response.statusText}`);
-        }
-        const data = (await response.json()) as ProviderResponse;
+        const client = await getClient();
+        const data: ProviderResponse = await client.listProviders();
         setProviders(data.all);
 
         const favs: FavoriteModel[] = [];
-        const defaultMap = data.default || {};
+        const defaultInfo = data.default;
 
-        for (const [providerID, modelID] of Object.entries(defaultMap)) {
-          const provider = data.all.find((p) => p.id === providerID);
-          if (provider && provider.models[modelID]) {
+        if (
+          defaultInfo &&
+          "providerID" in defaultInfo &&
+          "modelID" in defaultInfo
+        ) {
+          const provider = data.all.find(
+            (p) => p.id === defaultInfo.providerID,
+          );
+          if (provider && provider.models[defaultInfo.modelID]) {
             favs.push({
-              providerID,
+              providerID: defaultInfo.providerID,
               providerName: provider.name,
-              modelID,
-              modelName: provider.models[modelID].name,
+              modelID: defaultInfo.modelID,
+              modelName: provider.models[defaultInfo.modelID].name,
             });
           }
         }
+
         setFavorites(favs);
 
         if (favs.length > 0) {
