@@ -84,7 +84,9 @@ export default function Command(props: LaunchProps<{ arguments: Arguments }>) {
         setSessions(
           sessionList.sort((a, b) => b.time.updated - a.time.updated),
         );
-      } catch {}
+      } catch {
+        // Silently ignore - sessions list is optional UI enhancement
+      }
     }
     loadSessions();
   }, []);
