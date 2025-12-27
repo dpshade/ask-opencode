@@ -1,0 +1,127 @@
+{
+  "$schema": "https://www.raycast.com/schemas/extension.json",
+  "name": "opencode-raycast",
+  "version": "1.0.0",
+  "title": "OpenCode",
+  "description": "AI coding assistant with project context - quick questions, session handoff to CLI/Desktop",
+  "icon": "icon.png",
+  "author": "dpshade22",
+  "owner": "sst",
+  "access": "public",
+  "categories": [
+    "Developer Tools",
+    "Productivity"
+  ],
+  "keywords": [
+    "ai",
+    "coding",
+    "assistant",
+    "opencode",
+    "claude",
+    "gpt",
+    "developer",
+    "terminal"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sst/opencode.git",
+    "directory": "packages/raycast"
+  },
+  "bugs": {
+    "url": "https://github.com/sst/opencode/issues"
+  },
+  "homepage": "https://opencode.ai",
+  "commands": [
+    {
+      "name": "ask",
+      "title": "Ask OpenCode",
+      "subtitle": "AI Coding Assistant",
+      "description": "Quick coding questions with @path context",
+      "mode": "view",
+      "arguments": [
+        {
+          "name": "question",
+          "placeholder": "What do you want to know?",
+          "type": "text",
+          "required": false
+        }
+      ]
+    },
+    {
+      "name": "sessions",
+      "title": "Recent Sessions",
+      "description": "Browse and resume OpenCode conversations",
+      "mode": "view"
+    },
+    {
+      "name": "projects",
+      "title": "Switch Project",
+      "description": "Pick from recent projects",
+      "mode": "view"
+    }
+  ],
+  "preferences": [
+    {
+      "name": "defaultProject",
+      "type": "directory",
+      "title": "Default Project",
+      "description": "Default working directory for OpenCode",
+      "required": false
+    },
+    {
+      "name": "handoffMethod",
+      "type": "dropdown",
+      "title": "Handoff Method",
+      "description": "How to open full sessions",
+      "default": "terminal",
+      "data": [
+        {
+          "title": "Terminal (CLI)",
+          "value": "terminal"
+        },
+        {
+          "title": "Desktop App",
+          "value": "desktop"
+        }
+      ],
+      "required": false
+    },
+    {
+      "name": "autoStartServer",
+      "type": "checkbox",
+      "title": "Auto-start Server",
+      "description": "Automatically start OpenCode server if not running",
+      "default": true,
+      "label": "Start server automatically",
+      "required": false
+    },
+    {
+      "name": "terminalApp",
+      "type": "appPicker",
+      "title": "Terminal Application",
+      "description": "Select your terminal app for session handoff",
+      "required": false
+    }
+  ],
+  "dependencies": {
+    "@raycast/api": "^1.93.2",
+    "@raycast/utils": "^1.19.1"
+  },
+  "devDependencies": {
+    "@raycast/eslint-config": "^1.0.11",
+    "@types/node": "22.13.9",
+    "@types/react": "^19.0.10",
+    "eslint": "^8.57.0",
+    "prettier": "^3.4.2",
+    "typescript": "^5.8.2"
+  },
+  "scripts": {
+    "build": "ray build --skip-types -e dist -o dist",
+    "dev": "ray develop",
+    "fix-lint": "ray lint --fix",
+    "lint": "ray lint",
+    "prepublishOnly": "echo \"\\n\\nIt seems like you are trying to publish the Raycast extension to npm.\\n\\nIf you did intend to publish it to npm, remove the \\`prepublishOnly\\` script and rerun \\`npm publish\\` again.\\nIf you wanted to publish it to the Raycast Store instead, use \\`npm run publish\\` instead.\\n\\n\" && exit 1",
+    "publish": "npx @raycast/api@latest publish"
+  }
+}
