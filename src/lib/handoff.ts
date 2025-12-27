@@ -1,48 +1,61 @@
-import { Application, open, showHUD, Clipboard, getPreferenceValues } from "@raycast/api"
-import { runAppleScript } from "@raycast/utils"
-import { exec } from "child_process"
-import { promisify } from "util"
+import {
+  Application,
+  open,
+  showHUD,
+  Clipboard,
+  getPreferenceValues,
+} from "@raycast/api";
+import { runAppleScript } from "@raycast/utils";
+import { exec } from "child_process";
+import { promisify } from "util";
 
-const execAsync = promisify(exec)
+const execAsync = promisify(exec);
 
-type HandoffMethod = "terminal" | "desktop"
+type HandoffMethod = "terminal" | "desktop";
 
 interface Preferences {
-  terminalApp?: Application
+  terminalApp?: Application;
 }
 
-export async function handoffToOpenCode(sessionId: string, method: HandoffMethod, workingDir?: string): Promise<void> {
+export async function handoffToOpenCode(
+  sessionId: string,
+  method: HandoffMethod,
+  workingDir?: string,
+): Promise<void> {
   if (method === "desktop") {
-    await handoffToDesktop(sessionId)
+    await handoffToDesktop(sessionId);
   } else {
-    await handoffToTerminal(sessionId, workingDir)
+    await handoffToTerminal(sessionId, workingDir);
   }
 }
 
-async function handoffToTerminal(sessionId: string, workingDir?: string): Promise<void> {
-  const preferences = getPreferenceValues<Preferences>()
-  const cdCommand = workingDir ? `cd "${workingDir}" && ` : ""
-  const command = `${cdCommand}opencode --session=${sessionId}`
+async function handoffToTerminal(
+  sessionId: string,
+  workingDir?: string,
+): Promise<void> {
+  const preferences = getPreferenceValues<Preferences>();
+  const cdCommand = workingDir ? `cd "${workingDir}" && ` : "";
+  const command = `${cdCommand}opencode --session=${sessionId}`;
 
-  const app = preferences.terminalApp
+  const app = preferences.terminalApp;
   if (!app) {
-    await openInTerminalApp(command)
-    return
+    await openInTerminalApp(command);
+    return;
   }
 
-  const appName = app.name.toLowerCase()
+  const appName = app.name.toLowerCase();
 
   try {
     if (appName === "iterm" || appName.includes("iterm")) {
-      await openInITerm(command)
+      await openInITerm(command);
     } else if (appName === "terminal") {
-      await openInTerminalApp(command)
+      await openInTerminalApp(command);
     } else {
-      await openInGenericTerminal(app, command)
+      await openInGenericTerminal(app, command);
     }
   } catch {
-    await Clipboard.copy(command)
-    await showHUD("Command copied - paste in terminal")
+    await Clipboard.copy(command);
+    await showHUD("Command copied - paste in terminal");
   }
 }
 
@@ -96,13 +109,13 @@ async function openInITerm(command: string): Promise<void> {
       send_text(cmd)
       tell application "iTerm" to activate
     end run
-  `
-  await runAppleScript(script, [command])
-  await showHUD("Opened in iTerm")
+  `;
+  await runAppleScript(script, [command]);
+  await showHUD("Opened in iTerm");
 }
 
 async function openInTerminalApp(command: string): Promise<void> {
-  const escapedCommand = command.replace(/\\/g, "\\\\").replace(/"/g, '\\"')
+  const escapedCommand = command.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
   const script = `
     tell application "Terminal"
       if not (exists window 1) then reopen
@@ -115,16 +128,19 @@ async function openInTerminalApp(command: string): Promise<void> {
       
       do script "${escapedCommand}" in front window
     end tell
-  `
-  await runAppleScript(script)
-  await showHUD("Opened in Terminal")
+  `;
+  await runAppleScript(script);
+  await showHUD("Opened in Terminal");
 }
 
-async function openInGenericTerminal(app: Application, command: string): Promise<void> {
-  const appName = app.name
-  const processName = appName.replace(".app", "")
+async function openInGenericTerminal(
+  app: Application,
+  command: string,
+): Promise<void> {
+  const appName = app.name;
+  const processName = appName.replace(".app", "");
 
-  await execAsync(`open -a "${app.path}"`)
+  await execAsync(`open -a "${app.path}"`);
 
   await runAppleScript(`
     tell application "${appName}"
@@ -141,9 +157,9 @@ async function openInGenericTerminal(app: Application, command: string): Promise
         delay 0.3
       end tell
     end tell
-  `)
+  `);
 
-  await Clipboard.copy(command)
+  await Clipboard.copy(command);
 
   await runAppleScript(`
     tell application "System Events"
@@ -155,23 +171,26 @@ async function openInGenericTerminal(app: Application, command: string): Promise
         keystroke return
       end tell
     end tell
-  `)
+  `);
 
-  await showHUD(`Opened in ${appName}`)
+  await showHUD(`Opened in ${appName}`);
 }
 
 async function handoffToDesktop(sessionId: string): Promise<void> {
   try {
-    await open(`opencode://session/${sessionId}`)
-    await showHUD("Opened in OpenCode Desktop")
+    await open(`opencode://session/${sessionId}`);
+    await showHUD("Opened in OpenCode Desktop");
   } catch {
-    await handoffToTerminal(sessionId)
+    await handoffToTerminal(sessionId);
   }
 }
 
-export async function copySessionCommand(sessionId: string, workingDir?: string): Promise<void> {
-  const cdCommand = workingDir ? `cd "${workingDir}" && ` : ""
-  const command = `${cdCommand}opencode --session=${sessionId}`
-  await Clipboard.copy(command)
-  await showHUD("Command copied to clipboard")
+export async function copySessionCommand(
+  sessionId: string,
+  workingDir?: string,
+): Promise<void> {
+  const cdCommand = workingDir ? `cd "${workingDir}" && ` : "";
+  const command = `${cdCommand}opencode --session=${sessionId}`;
+  await Clipboard.copy(command);
+  await showHUD("Command copied to clipboard");
 }

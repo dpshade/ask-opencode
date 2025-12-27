@@ -1,93 +1,97 @@
-import { useState, useEffect } from "react"
-import { readdirSync, statSync, existsSync } from "fs"
-import { homedir } from "os"
-import path from "path"
+import { useState, useEffect } from "react";
+import { readdirSync, statSync, existsSync } from "fs";
+import { homedir } from "os";
+import path from "path";
 
 interface UsePathAutocompleteResult {
-  suggestions: string[]
-  isActive: boolean
-  pathPrefix: string
+  suggestions: string[];
+  isActive: boolean;
+  pathPrefix: string;
 }
 
 export function usePathAutocomplete(query: string): UsePathAutocompleteResult {
-  const [suggestions, setSuggestions] = useState<string[]>([])
+  const [suggestions, setSuggestions] = useState<string[]>([]);
 
-  const match = query.match(/@([\w\/~.-]*)$/)
-  const pathPrefix = match ? match[1] : ""
-  const isActive = match !== null && (
-    pathPrefix.startsWith("/") || 
-    pathPrefix.startsWith("~/") || 
-    pathPrefix.startsWith("./") ||
-    pathPrefix === "~" ||
-    pathPrefix === "."
-  )
+  const match = query.match(/@([\w/~.-]*)$/);
+  const pathPrefix = match ? match[1] : "";
+  const isActive =
+    match !== null &&
+    (pathPrefix.startsWith("/") ||
+      pathPrefix.startsWith("~/") ||
+      pathPrefix.startsWith("./") ||
+      pathPrefix === "~" ||
+      pathPrefix === ".");
 
   useEffect(() => {
     if (!isActive || !pathPrefix) {
-      setSuggestions([])
-      return
+      setSuggestions([]);
+      return;
     }
 
     try {
-      const expandedPath = pathPrefix.replace(/^~/, homedir())
-      const isAbsolute = expandedPath.startsWith("/")
+      const expandedPath = pathPrefix.replace(/^~/, homedir());
+      const isAbsolute = expandedPath.startsWith("/");
 
       if (!isAbsolute && !pathPrefix.startsWith("~")) {
-        setSuggestions([])
-        return
+        setSuggestions([]);
+        return;
       }
 
-      const dir = path.dirname(expandedPath) || "/"
-      const prefix = path.basename(expandedPath)
+      const dir = path.dirname(expandedPath) || "/";
+      const prefix = path.basename(expandedPath);
 
       if (!existsSync(dir)) {
-        setSuggestions([])
-        return
+        setSuggestions([]);
+        return;
       }
 
       const entries = readdirSync(dir)
         .filter((name) => {
-          if (name.startsWith(".")) return false
-          if (!name.toLowerCase().startsWith(prefix.toLowerCase())) return false
+          if (name.startsWith(".")) return false;
+          if (!name.toLowerCase().startsWith(prefix.toLowerCase()))
+            return false;
 
           try {
-            const fullPath = path.join(dir, name)
-            return statSync(fullPath).isDirectory()
+            const fullPath = path.join(dir, name);
+            return statSync(fullPath).isDirectory();
           } catch {
-            return false
+            return false;
           }
         })
         .slice(0, 8)
         .map((name) => {
-          const fullPath = path.join(dir, name)
-          return fullPath.replace(homedir(), "~")
-        })
+          const fullPath = path.join(dir, name);
+          return fullPath.replace(homedir(), "~");
+        });
 
-      setSuggestions(entries)
+      setSuggestions(entries);
     } catch {
-      setSuggestions([])
+      setSuggestions([]);
     }
-  }, [isActive, pathPrefix])
+  }, [isActive, pathPrefix]);
 
   return {
     suggestions,
     isActive,
     pathPrefix,
-  }
+  };
 }
 
-export function extractPathFromQuery(query: string): { cleanQuery: string; directory: string | null } {
-  const match = query.match(/@([\w\/~.-]+)/)
+export function extractPathFromQuery(query: string): {
+  cleanQuery: string;
+  directory: string | null;
+} {
+  const match = query.match(/@([\w/~.-]+)/);
   if (!match) {
-    return { cleanQuery: query, directory: null }
+    return { cleanQuery: query, directory: null };
   }
 
-  const pathPart = match[1].replace(/^~/, homedir())
-  const cleanQuery = query.replace(/@[\w\/~.-]+\s*/, "").trim()
+  const pathPart = match[1].replace(/^~/, homedir());
+  const cleanQuery = query.replace(/@[\w/~.-]+\s*/, "").trim();
 
   if (existsSync(pathPart) && statSync(pathPart).isDirectory()) {
-    return { cleanQuery, directory: pathPart }
+    return { cleanQuery, directory: pathPart };
   }
 
-  return { cleanQuery: query, directory: null }
+  return { cleanQuery: query, directory: null };
 }

@@ -28,7 +28,10 @@ export interface ProviderResponse {
 export function useProviders() {
   const [providers, setProviders] = useState<Provider[]>([]);
   const [favorites, setFavorites] = useState<FavoriteModel[]>([]);
-  const [defaultModel, setDefaultModel] = useState<{ providerID: string; modelID: string } | null>(null);
+  const [defaultModel, setDefaultModel] = useState<{
+    providerID: string;
+    modelID: string;
+  } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
@@ -42,12 +45,12 @@ export function useProviders() {
         }
         const data = (await response.json()) as ProviderResponse;
         setProviders(data.all);
-        
+
         const favs: FavoriteModel[] = [];
         const defaultMap = data.default || {};
-        
+
         for (const [providerID, modelID] of Object.entries(defaultMap)) {
-          const provider = data.all.find(p => p.id === providerID);
+          const provider = data.all.find((p) => p.id === providerID);
           if (provider && provider.models[modelID]) {
             favs.push({
               providerID,
@@ -58,9 +61,12 @@ export function useProviders() {
           }
         }
         setFavorites(favs);
-        
+
         if (favs.length > 0) {
-          setDefaultModel({ providerID: favs[0].providerID, modelID: favs[0].modelID });
+          setDefaultModel({
+            providerID: favs[0].providerID,
+            modelID: favs[0].modelID,
+          });
         }
       } catch (err) {
         setError(err instanceof Error ? err : new Error(String(err)));

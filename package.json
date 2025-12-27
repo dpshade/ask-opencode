@@ -6,7 +6,6 @@
   "description": "AI coding assistant with project context - quick questions, session handoff to CLI/Desktop",
   "icon": "icon.png",
   "author": "dpshade22",
-  "owner": "sst",
   "access": "public",
   "categories": [
     "Developer Tools",
@@ -25,11 +24,10 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/sst/opencode.git",
-    "directory": "packages/raycast"
+    "url": "https://github.com/dpshade/ask-opencode.git"
   },
   "bugs": {
-    "url": "https://github.com/sst/opencode/issues"
+    "url": "https://github.com/dpshade/ask-opencode/issues"
   },
   "homepage": "https://opencode.ai",
   "commands": [

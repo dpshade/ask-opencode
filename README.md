@@ -52,7 +52,8 @@ Search for "OpenCode" in Raycast Store and install.
 
 2. Clone this repository and install:
    ```bash
-   cd packages/raycast
+   git clone https://github.com/dpshade/ask-opencode.git
+   cd ask-opencode
    npm install
    npm run dev
    ```
@@ -139,9 +140,9 @@ curl -fsSL https://opencode.ai/install | bash
 
 - [OpenCode Website](https://opencode.ai)
 - [OpenCode Documentation](https://opencode.ai/docs)
-- [GitHub Repository](https://github.com/sst/opencode)
+- [GitHub Repository](https://github.com/dpshade/ask-opencode)
 - [Discord Community](https://opencode.ai/discord)
 
 ## License
 
-MIT - see [LICENSE](../../LICENSE)
+MIT - see [LICENSE](LICENSE)
