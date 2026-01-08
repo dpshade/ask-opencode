@@ -25,9 +25,28 @@ import { handoffToOpenCode, copySessionCommand } from "./lib/handoff";
 import { getClient, Session } from "./lib/opencode";
 import { homedir } from "os";
 
+const PROVIDER_ICONS: Record<string, string> = {
+  anthropic: "providers/anthropic.svg",
+  openai: "providers/openai.svg",
+  google: "providers/google.svg",
+  xai: "providers/xai.svg",
+  ollama: "providers/ollama.svg",
+  mistral: "providers/mistral.svg",
+  cohere: "providers/cohere.svg",
+  groq: "providers/groq.svg",
+  azure: "providers/azure.svg",
+  openrouter: "providers/openrouter.svg",
+  opencode: "providers/opencode.svg",
+};
+
+function getProviderIcon(providerId: string): string | Icon {
+  return PROVIDER_ICONS[providerId.toLowerCase()] || Icon.Circle;
+}
+
 interface Preferences {
   defaultProject?: string;
   handoffMethod: "terminal" | "desktop";
+  providerFilter?: string;
 }
 
 interface Arguments {
@@ -51,11 +70,36 @@ export default function Command(props: LaunchProps<{ arguments: Arguments }>) {
   );
 
   const {
-    providers,
-    favorites,
+    providers: allProviders,
+    favorites: allFavorites,
     defaultModel,
     isLoading: modelsLoading,
   } = useProviders();
+
+  const providerFilterSet = React.useMemo(() => {
+    if (!preferences.providerFilter?.trim()) return null;
+    return new Set(
+      preferences.providerFilter
+        .split(",")
+        .map((p) => p.trim().toLowerCase())
+        .filter(Boolean),
+    );
+  }, [preferences.providerFilter]);
+
+  const providers = React.useMemo(() => {
+    if (!providerFilterSet) return allProviders;
+    return allProviders.filter((p) =>
+      providerFilterSet.has(p.id.toLowerCase()),
+    );
+  }, [allProviders, providerFilterSet]);
+
+  const favorites = React.useMemo(() => {
+    if (!providerFilterSet) return allFavorites;
+    return allFavorites.filter((f) =>
+      providerFilterSet.has(f.providerID.toLowerCase()),
+    );
+  }, [allFavorites, providerFilterSet]);
+
   const activeModel = selectedModel || defaultModel;
 
   const {
@@ -335,9 +379,9 @@ export default function Command(props: LaunchProps<{ arguments: Arguments }>) {
               {favorites.map((fav) => (
                 <List.Dropdown.Item
                   key={`fav-${fav.providerID}-${fav.modelID}`}
-                  title={`${fav.modelName} (${fav.providerID})`}
+                  title={`${fav.modelName} (${fav.providerName})`}
                   value={`${fav.providerID}/${fav.modelID}`}
-                  icon={Icon.Star}
+                  icon={getProviderIcon(fav.providerID)}
                 />
               ))}
             </List.Dropdown.Section>
@@ -347,8 +391,9 @@ export default function Command(props: LaunchProps<{ arguments: Arguments }>) {
               {Object.values(provider.models).map((model) => (
                 <List.Dropdown.Item
                   key={model.id}
-                  title={model.name}
+                  title={`${model.name} (${provider.name})`}
                   value={`${provider.id}/${model.id}`}
+                  icon={getProviderIcon(provider.id)}
                 />
               ))}
             </List.Dropdown.Section>

@@ -100,6 +100,14 @@
       "title": "Terminal Application",
       "description": "Select your terminal app for session handoff",
       "required": false
+    },
+    {
+      "name": "providerFilter",
+      "type": "textfield",
+      "title": "Provider Filter",
+      "description": "Providers to show (comma-separated). Leave empty for all. Example: anthropic,openai,google",
+      "placeholder": "Leave empty for all providers",
+      "required": false
     }
   ],
   "dependencies": {

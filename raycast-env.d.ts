@@ -15,7 +15,9 @@ type ExtensionPreferences = {
   /** Auto-start Server - Automatically start OpenCode server if not running */
   "autoStartServer": boolean,
   /** Terminal Application - Select your terminal app for session handoff */
-  "terminalApp"?: import("@raycast/api").Application
+  "terminalApp"?: import("@raycast/api").Application,
+  /** Provider Filter - Providers to show (comma-separated). Leave empty for all. Example: anthropic,openai,google */
+  "providerFilter"?: string
 }
 
 /** Preferences accessible in all the extension's commands */
